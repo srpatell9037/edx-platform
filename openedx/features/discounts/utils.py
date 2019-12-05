@@ -33,17 +33,11 @@ def offer_banner_wrapper(user, block, view, frag, context):  # pylint: disable=W
     if block.category != "vertical":
         return frag
 
-    request_cache = RequestCache('offer_banner_wrapper')
-    cache_key = '{},{}'.format(block.course_id, user.id)
-    cache_response = request_cache.get_cached_response(cache_key)
-    if cache_response.is_found:
-        return cache_response.value
-
-    course = CourseOverview.get_from_id(block.course_id)
-    offer_banner_fragment = get_first_purchase_offer_banner_fragment(user, course)
+    offer_banner_fragment = get_first_purchase_offer_banner_fragment_from_key(
+        user, block.course_id
+    )
 
     if not offer_banner_fragment:
-        request_cache.set(cache_key, frag)
         return frag
 
     # Course content must be escaped to render correctly due to the way the
@@ -54,7 +48,6 @@ def offer_banner_wrapper(user, block, view, frag, context):  # pylint: disable=W
     offer_banner_fragment.add_content(frag.content)
     offer_banner_fragment.add_fragment_resources(frag)
 
-    request_cache.set(cache_key, offer_banner_fragment)
     return offer_banner_fragment
 
 
@@ -106,12 +99,7 @@ def format_strikeout_price(user, course, base_price=None, check_for_discount=Tru
         return (HTML(u"<span class='price'>{}</span>").format(original_price), False)
 
 
-def get_first_purchase_offer_banner_fragment(user, course):
-    """
-    Return an HTML Fragment with First Purcahse Discount message,
-    which has the discount_expiration_date, price,
-    discount percentage and a link to upgrade.
-    """
+def generate_offer_html(user, course):
     if user and not user.is_anonymous and course:
         now = datetime.now(tz=pytz.UTC).strftime(u"%Y-%m-%d %H:%M:%S%z")
         saw_banner = ExperimentData.objects.filter(
@@ -128,7 +116,8 @@ def get_first_purchase_offer_banner_fragment(user, course):
             offer_message = _(u'{banner_open} Upgrade by {discount_expiration_date} and save {percentage}% '
                               u'[{strikeout_price}]{span_close}{br}Discount will be automatically applied at checkout. '
                               u'{a_open}Upgrade Now{a_close}{div_close}')
-            return Fragment(HTML(offer_message).format(
+
+            message_html = HTML(offer_message).format(
                 a_open=HTML(u'<a href="{upgrade_link}">').format(
                     upgrade_link=verified_upgrade_deadline_link(user=user, course=course)
                 ),
@@ -143,5 +132,40 @@ def get_first_purchase_offer_banner_fragment(user, course):
                 span_close=HTML('</span>'),
                 div_close=HTML('</div>'),
                 strikeout_price=HTML(format_strikeout_price(user, course, check_for_discount=False)[0])
-            ))
+            )
+            return message_html
     return None
+
+def get_first_purchase_offer_banner_fragment(user, course):
+    """
+    Return an HTML Fragment with First Purcahse Discount message,
+    which has the discount_expiration_date, price,
+    discount percentage and a link to upgrade.
+    """
+    offer_html = generate_offer_html(user, course)
+    if offer_html is None:
+        return None
+    return Fragment(offer_html)
+
+def get_first_purchase_offer_banner_fragment_from_key(user, course_key):
+    """
+    Like `get_first_purchase_offer_banner_fragment`, but using a CourseKey
+    instead of a CourseOverview and using request-level caching.
+
+    Either returns WebFragment to inject XBlock content into, or None if we
+    shouldn't show a first purchase offer message for this user.
+    """
+    request_cache = RequestCache('get_first_purchase_offer_banner_fragment_from_key')
+    cache_key = u'html:{},{}'.format(user.id, course_key)
+    cache_response = request_cache.get_cached_response(cache_key)
+    if cache_response.is_found:
+        cached_html = cache_response.value
+        if cached_html is None:
+            return None
+        return Fragment(cached_html)
+
+    course = CourseOverview.get_from_id(course_key)
+    offer_html = generate_offer_html(user, course)
+    request_cache.set(cache_key, offer_html)
+
+    return Fragment(offer_html)

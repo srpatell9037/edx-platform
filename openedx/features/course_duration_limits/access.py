@@ -230,10 +230,10 @@ def generate_course_expired_message(user, course):
 def generate_course_expired_fragment(user, course):
     message = generate_course_expired_message(user, course)
     if message:
-        return create_fragment_from_message(message)
+        return generate_fragment_from_message(message)
 
 
-def create_fragment_from_message(message):
+def generate_fragment_from_message(message):
     return Fragment(HTML(u"""\
             <div class="course-expiration-message">{}</div>
         """).format(message))
@@ -255,7 +255,7 @@ def generate_course_expired_fragment_from_key(user, course_key):
         # In this case, there is no message to display.
         if cached_message is None:
             return None
-        return create_fragment_from_message(cached_message)
+        return generate_fragment_from_message(cached_message)
 
     course = CourseOverview.get_from_id(course_key)
     message = generate_course_expired_message(user, course)
@@ -263,7 +263,7 @@ def generate_course_expired_fragment_from_key(user, course_key):
     if message is None:
         return None
 
-    return create_fragment_from_message(message)
+    return generate_fragment_from_message(message)
 
 
 def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disable=W0613
