@@ -230,11 +230,35 @@ def generate_course_expired_message(user, course):
 def generate_course_expired_fragment(user, course):
     message = generate_course_expired_message(user, course)
     if message:
-        return Fragment(HTML(u"""\
+        return create_fragment_from_message(message)
+
+
+def create_fragment_from_message(message):
+    return Fragment(HTML(u"""\
             <div class="course-expiration-message">{}</div>
         """).format(message))
 
 
+def generate_course_expired_fragment_from_key(user, course_key):
+    """
+    Like `generate_course_expired_fragment`, but using a CourseKey instead of
+    a CourseOverview and using request-level caching.
+    """
+    request_cache = RequestCache('generate_course_expired_fragment_from_key')
+    cache_key = u'message:{},{}'.format(user.id, course_key)
+    cache_response = request_cache.get_cached_response(cache_key)
+    if cache_response.is_found:
+        cached_message = cache_response.value
+        return create_fragment_from_message(cached_message)
+
+    course = CourseOverview.get_from_id(course_key)
+    message = generate_course_expired_message(user, course)
+    request_cache.set(cache_key, message)
+
+    return create_fragment_from_message(message)
+
+
+# New version
 def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disable=W0613
     """
     An XBlock wrapper that prepends a message to the beginning of a vertical if
@@ -243,17 +267,10 @@ def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disa
     if block.category != "vertical":
         return frag
 
-    request_cache = RequestCache('course_expiration_wrapper')
-    cache_key = '{},{}'.format(block.course_id, user.id)
-    cache_response = request_cache.get_cached_response(cache_key)
-    if cache_response.is_found:
-        return cache_response.value
-
-    course = CourseOverview.get_from_id(block.course_id)
-    course_expiration_fragment = generate_course_expired_fragment(user, course)
-
+    course_expiration_fragment = generate_course_expired_fragment_from_key(
+        user, block.course_id
+    )
     if not course_expiration_fragment:
-        request_cache.set(cache_key, frag)
         return frag
 
     # Course content must be escaped to render correctly due to the way the
@@ -264,5 +281,4 @@ def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disa
     course_expiration_fragment.add_content(frag.content)
     course_expiration_fragment.add_fragment_resources(frag)
 
-    request_cache.set(cache_key, course_expiration_fragment)
     return course_expiration_fragment
