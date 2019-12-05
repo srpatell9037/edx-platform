@@ -1276,6 +1276,8 @@ class CourseEnrollment(models.Model):
         This saves immediately.
 
         """
+        RequestCache('get_enrollment').clear()
+
         activation_changed = False
         # if is_active is None, then the call to update_enrollment didn't specify
         # any value, so just leave is_active as it is
@@ -1507,8 +1509,7 @@ class CourseEnrollment(models.Model):
 
         `skip_refund` can be set to True to avoid the refund process.
         """
-        request_cache = RequestCache('get_enrollment')
-        request_cache.clear()
+        RequestCache('get_enrollment').clear()
 
         try:
             record = cls.objects.get(user=user, course_id=course_id)
@@ -1531,8 +1532,7 @@ class CourseEnrollment(models.Model):
 
         `course_id` is our usual course_id string (e.g. "edX/Test101/2013_Fall)
         """
-        request_cache = RequestCache('get_enrollment')
-        request_cache.clear()
+        RequestCache('get_enrollment').clear()
 
         try:
             user = User.objects.get(email=email)
