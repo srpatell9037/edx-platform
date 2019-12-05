@@ -6,6 +6,7 @@ from datetime import datetime
 
 import six
 from django.utils.translation import ugettext as _
+from edx_django_utils.cache import RequestCache
 import pytz
 
 from course_modes.models import get_course_prices, format_course_price
@@ -32,10 +33,17 @@ def offer_banner_wrapper(user, block, view, frag, context):  # pylint: disable=W
     if block.category != "vertical":
         return frag
 
+    request_cache = RequestCache('offer_banner_wrapper')
+    cache_key = '{},{}'.format(block.course_id, user.id)
+    cache_response = request_cache.get_cached_response(cache_key)
+    if cache_response.is_found:
+        return cache_response.value
+
     course = CourseOverview.get_from_id(block.course_id)
     offer_banner_fragment = get_first_purchase_offer_banner_fragment(user, course)
 
     if not offer_banner_fragment:
+        request_cache.set(cache_key, frag)
         return frag
 
     # Course content must be escaped to render correctly due to the way the
@@ -46,6 +54,7 @@ def offer_banner_wrapper(user, block, view, frag, context):  # pylint: disable=W
     offer_banner_fragment.add_content(frag.content)
     offer_banner_fragment.add_fragment_resources(frag)
 
+    request_cache.set(cache_key, offer_banner_fragment)
     return offer_banner_fragment
 
 
