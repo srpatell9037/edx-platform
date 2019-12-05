@@ -136,6 +136,7 @@ def generate_offer_html(user, course):
             return message_html
     return None
 
+
 def get_first_purchase_offer_banner_fragment(user, course):
     """
     Return an HTML Fragment with First Purcahse Discount message,
@@ -146,6 +147,7 @@ def get_first_purchase_offer_banner_fragment(user, course):
     if offer_html is None:
         return None
     return Fragment(offer_html)
+
 
 def get_first_purchase_offer_banner_fragment_from_key(user, course_key):
     """
