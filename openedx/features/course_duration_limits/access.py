@@ -11,6 +11,7 @@ import six
 from django.utils import timezone
 from django.utils.translation import get_language
 from django.utils.translation import ugettext as _
+from edx_django_utils.cache import RequestCache
 from web_fragments.fragment import Fragment
 
 from course_modes.models import CourseMode
@@ -242,10 +243,17 @@ def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disa
     if block.category != "vertical":
         return frag
 
+    request_cache = RequestCache('course_expiration_wrapper')
+    cache_key = '{},{}'.format(block.course_id, user.id)
+    cache_response = request_cache.get_cached_response(cache_key)
+    if cache_response.is_found:
+        return cache_response.value
+
     course = CourseOverview.get_from_id(block.course_id)
     course_expiration_fragment = generate_course_expired_fragment(user, course)
 
     if not course_expiration_fragment:
+        request_cache.set(cache_key, frag)
         return frag
 
     # Course content must be escaped to render correctly due to the way the
@@ -256,4 +264,5 @@ def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disa
     course_expiration_fragment.add_content(frag.content)
     course_expiration_fragment.add_fragment_resources(frag)
 
+    request_cache.set(cache_key, course_expiration_fragment)
     return course_expiration_fragment
