@@ -1507,6 +1507,9 @@ class CourseEnrollment(models.Model):
 
         `skip_refund` can be set to True to avoid the refund process.
         """
+        request_cache = RequestCache('get_enrollment')
+        request_cache.clear()
+
         try:
             record = cls.objects.get(user=user, course_id=course_id)
             record.update_enrollment(is_active=False, skip_refund=skip_refund)
@@ -1528,6 +1531,9 @@ class CourseEnrollment(models.Model):
 
         `course_id` is our usual course_id string (e.g. "edX/Test101/2013_Fall)
         """
+        request_cache = RequestCache('get_enrollment')
+        request_cache.clear()
+
         try:
             user = User.objects.get(email=email)
             return cls.unenroll(user, course_id)
