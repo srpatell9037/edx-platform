@@ -1207,13 +1207,24 @@ class CourseEnrollment(models.Model):
         if user.is_anonymous:
             return None
         try:
+            request_cache = RequestCache('get_enrollment')
+            if select_related:
+                cache_key = (user.id, course_key, ','.join(select_related))
+            else:
+                cache_key = (user.id, course_key)
+            cache_response = request_cache.get_cached_response(cache_key)
+            if cache_response.is_found:
+                return cache_response.value
+
             query = cls.objects
             if select_related is not None:
                 query = query.select_related(*select_related)
-            return query.get(
+            enrollment = query.get(
                 user=user,
                 course_id=course_key
             )
+            request_cache.set(cache_key, enrollment)
+            return enrollment
         except cls.DoesNotExist:
             return None
 
