@@ -209,9 +209,17 @@ def user_by_anonymous_id(uid):
     if uid is None:
         return None
 
+    request_cache = RequestCache('user_by_anonymous_id')
+    cache_response = request_cache.get_cached_response(uid)
+    if cache_response.is_found:
+        return cache_response.value
+
     try:
-        return User.objects.get(anonymoususerid__anonymous_user_id=uid)
+        user = User.objects.get(anonymoususerid__anonymous_user_id=uid)
+        request_cache.set(uid, user)
+        return user
     except ObjectDoesNotExist:
+        request_cache.set(uid, None)
         return None
 
 
