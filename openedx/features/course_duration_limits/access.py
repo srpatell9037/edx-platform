@@ -243,22 +243,29 @@ def generate_course_expired_fragment_from_key(user, course_key):
     """
     Like `generate_course_expired_fragment`, but using a CourseKey instead of
     a CourseOverview and using request-level caching.
+
+    Either returns WebFragment to inject XBlock content into, or None if we
+    shouldn't show a course expired message for this user.
     """
     request_cache = RequestCache('generate_course_expired_fragment_from_key')
     cache_key = u'message:{},{}'.format(user.id, course_key)
     cache_response = request_cache.get_cached_response(cache_key)
     if cache_response.is_found:
         cached_message = cache_response.value
+        # In this case, there is no message to display.
+        if cached_message is None:
+            return None
         return create_fragment_from_message(cached_message)
 
     course = CourseOverview.get_from_id(course_key)
     message = generate_course_expired_message(user, course)
     request_cache.set(cache_key, message)
+    if message is None:
+        return None
 
     return create_fragment_from_message(message)
 
 
-# New version
 def course_expiration_wrapper(user, block, view, frag, context):  # pylint: disable=W0613
     """
     An XBlock wrapper that prepends a message to the beginning of a vertical if
