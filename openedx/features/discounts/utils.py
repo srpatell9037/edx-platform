@@ -100,6 +100,12 @@ def format_strikeout_price(user, course, base_price=None, check_for_discount=Tru
 
 
 def generate_offer_html(user, course):
+    """
+    Create the actual HTML object with the offer text in it.
+
+    Returns a openedx.core.djangolib.markup.HTML object, or None if the user
+    should not be shown an offer message.
+    """
     if user and not user.is_anonymous and course:
         now = datetime.now(tz=pytz.UTC).strftime(u"%Y-%m-%d %H:%M:%S%z")
         saw_banner = ExperimentData.objects.filter(
