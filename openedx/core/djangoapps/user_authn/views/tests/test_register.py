@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import json
+import simplejson
 from unittest import skipIf, skipUnless
 from datetime import datetime
 
@@ -302,7 +303,7 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
     YEAR_OF_BIRTH = "1998"
     ADDRESS = "123 Fake Street"
     CITY = "Springfield"
-    COUNTRY = "us"
+    COUNTRY = "US"
     GOALS = "Learn all the things!"
     PROFESSION_OPTIONS = [
         {
@@ -548,7 +549,7 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
             ] + [
                 {
                     "value": country_code,
-                    "name": six.text_type(country_name),
+                    "name": country_name,
                     "default": True if country_code == expected_country_code else False
                 }
                 for country_code, country_name in SORTED_COUNTRIES
@@ -1600,15 +1601,27 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
             msg=u"Could not find field {name}".format(name=expected_field["name"])
         )
 
-        for key in expected_field:
-            self.assertEqual(
-                actual_field[key], expected_field[key],
-                msg=u"Expected {expected} for {key} but got {actual} instead".format(
-                    key=key,
-                    actual=actual_field[key],
-                    expected=expected_field[key]
+        actual_options = actual_field.get("options")
+        expected_options = expected_field.get("options")
+
+        if actual_options and expected_options:
+            self._test_countries(expected_options, actual_options)
+        else:
+            for key in expected_field:
+                self.assertEqual(
+                    actual_field[key], expected_field[key],
+                    msg=u"Expected {expected} for {key} but got {actual} instead".format(
+                        key=key,
+                        actual=actual_field[key],
+                        expected=expected_field[key]
+                    )
                 )
-            )
+
+    def _test_countries(self, expected, actual):
+
+        for item in actual:
+            item_to_compare = next(item for expected_item in expected if expected_item["value"] == item["value"])
+            self.assertEqual(item, item_to_compare)
 
     def _populate_always_present_fields(self, field):
         """
@@ -1649,7 +1662,7 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
             self.assertHttpOK(response)
 
         # Verify that the form description matches what we'd expect
-        form_desc = json.loads(response.content.decode('utf-8'))
+        form_desc = simplejson.loads(response.content)
 
         actual_field = None
         for field in form_desc["fields"]:
