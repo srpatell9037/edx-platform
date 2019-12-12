@@ -10,9 +10,9 @@ function getAlertHtml(learnerPortalLinks) {
   let html = '';
   for (let i = 0; i < learnerPortalLinks.length; i += 1) {
     const link = learnerPortalLinks[i];
-    html += `<div>
-      ${link.title} has a dedicated page where you can see all of your sponsored courses.
-      Go to <a href="${link.url}">your learner portal</a>.
+    html += `<div class="copy-content">
+      <p>${link.title} has a dedicated page where you can see all of your sponsored courses.
+      Go to <a href="${link.url}">your learner portal</a>. </p>
     </div>`;
   }
   return html;
