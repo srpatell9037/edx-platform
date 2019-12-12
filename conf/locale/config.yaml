@@ -40,7 +40,7 @@ locales:
     # - fil  # Filipino
     - fr  # French
     # - gl  # Galician
-    # - gu  # Gujarati
+    - gu  # Gujarati
     - he  # Hebrew
     - hi  # Hindi
     # - hr  # Croatian
