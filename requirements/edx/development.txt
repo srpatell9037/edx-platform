@@ -81,7 +81,7 @@ django-config-models==1.0.3
 django-cors-headers==2.1.0
 django-countries==4.6.1
 django-crum==0.7.5
-django-debug-toolbar==1.8
+django-debug-toolbar==1.11
 django-fernet-fields==0.6
 django-filter==1.0.4
 django-ipware==2.1.0
