@@ -66,7 +66,6 @@ django-waffle==0.12.0
 django-webpack-loader               # Used to wire webpack bundles into the django asset pipeline
 djangorestframework==3.7.7
 djangorestframework-jwt
-drf-yasg                            # Replacement for django-rest-swagger
 edx-ace==0.1.10
 edx-analytics-data-api-client
 edx-bulk-grades                     # LMS REST API for managing bulk grading operations
@@ -77,7 +76,8 @@ edx-django-oauth2-provider
 edx-django-release-util             # Release utils for the edx release pipeline
 edx-django-sites-extensions==2.3.1
 edx-django-utils
-edx-drf-extensions
+#edx-drf-extensions
+git+https://github.com/edx/edx-drf-extensions@kdmccormick/apidocs#egg=edx-drf-extensions
 edx-enterprise
 edx-milestones
 edx-oauth2-provider
